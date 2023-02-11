@@ -1,0 +1,70 @@
+"A date string with format `Y-m-d`, e.g. `2011-05-23`."
+scalar Date @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\Date")
+
+"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+type Query {
+    me: User @auth(guard: "api")
+    tasks:
+        [Task!]!
+        @whereAuth(relation: "user")
+        @paginate(scopes: ["activeCategory", "team"])
+    task(id: ID! @eq): Task @find @whereAuth(relation: "user")
+    categories:
+        [Category!]!
+        @whereAuth(relation: "user")
+        @paginate(scopes: ["active", "team"])
+}
+
+type Mutation {
+    login(
+        email: String!
+        password: String!
+        client: String!
+    ): String @field(resolver: "AuthMutator")
+
+    createCategory(name: String!): Category
+        @create
+        @guard(with: ["api"])
+
+    updateCategory(id: ID!, name: String, active: Boolean): Category
+        @update
+        @guard(with: ["api"])
+
+    createTask(description: String!, category_id: Int!): Task
+        @create
+        @guard(with: ["api"])
+
+    updateTask(
+        id: ID!,
+        description: String,
+        category_id: Int,
+        completed: Boolean
+    ): Task
+        @update
+        @guard(with: ["api"])
+}
+
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    created_at: DateTime!
+    updated_at: DateTime!
+    tasks: [Task!]! @hasMany
+}
+
+type Task {
+    id: ID!
+    description: String!
+    completed: Boolean!
+    user: User! @belongsTo(relation: "user")
+    category: Category!
+}
+
+type Category {
+    id: ID!
+    name: String!
+    active: Boolean!
+}
